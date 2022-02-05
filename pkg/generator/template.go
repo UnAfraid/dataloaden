@@ -12,12 +12,16 @@ var tpl = template.Must(template.New("generated").
 package {{.Package}}
 
 import (
+    "fmt"
+    "sort"
+    "strconv"
+    "strings"
     "sync"
     "time"
 
     {{if .KeyType.ImportPath}}"{{.KeyType.ImportPath}}"{{end}}
     {{if .ValType.ImportPath}}"{{.ValType.ImportPath}}"{{end}}
-	"github.com/hashicorp/go-multierror"
+    "github.com/hashicorp/go-multierror"
 )
 
 // {{.Name}}Config captures the config to create a new {{.Name}}
