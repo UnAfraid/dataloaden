@@ -51,7 +51,7 @@ var partsRe = regexp.MustCompile(`^([\[\]\*]*)(.*?)(\.\w*)?$`)
 func parseType(str string) (*goType, error) {
 	parts := partsRe.FindStringSubmatch(str)
 	if len(parts) != 4 {
-		return nil, fmt.Errorf("type must be in the form []*github.com/import/path.Name")
+		return nil, errors.New("type must be in the form []*github.com/import/path.Name")
 	}
 
 	t := &goType{
@@ -71,7 +71,7 @@ func parseType(str string) (*goType, error) {
 			return nil, err
 		}
 		if len(p) != 1 {
-			return nil, fmt.Errorf("not found")
+			return nil, fmt.Errorf("package: %s not found", t.ImportPath)
 		}
 
 		t.ImportName = p[0].Name
@@ -103,7 +103,10 @@ func getData(name string, keyType string, valueType string, workingDirectory str
 
 	genPkg := getPackage(workingDirectory)
 	if genPkg == nil {
-		return templateData{}, fmt.Errorf("unable to find package info for " + workingDirectory)
+		return templateData{}, fmt.Errorf("unable to find package info for %s", workingDirectory)
+	}
+	if genPkg.Name == "" {
+		return templateData{}, fmt.Errorf("unable to find package name for %s", workingDirectory)
 	}
 
 	var err error
@@ -111,11 +114,12 @@ func getData(name string, keyType string, valueType string, workingDirectory str
 	data.Package = genPkg.Name
 	data.KeyType, err = parseType(keyType)
 	if err != nil {
-		return templateData{}, fmt.Errorf("key type: %s", err.Error())
+		return templateData{}, fmt.Errorf("failed to parse key type: %w", err)
 	}
+
 	data.ValType, err = parseType(valueType)
 	if err != nil {
-		return templateData{}, fmt.Errorf("key type: %s", err.Error())
+		return templateData{}, fmt.Errorf("failed to parse value type: %w", err)
 	}
 
 	// if we are inside the same package as the type we don't need an import and can refer directly to the type
@@ -146,16 +150,16 @@ func getPackage(dir string) *packages.Package {
 func writeTemplate(filepath string, data templateData) error {
 	var buf bytes.Buffer
 	if err := tpl.Execute(&buf, data); err != nil {
-		return errors.Wrap(err, "generating code")
+		return fmt.Errorf("failed to generate code: %w", err)
 	}
 
 	src, err := imports.Process(filepath, buf.Bytes(), nil)
 	if err != nil {
-		return errors.Wrap(err, "unable to gofmt")
+		return fmt.Errorf("unable to gofmt: %w", err)
 	}
 
 	if err := ioutil.WriteFile(filepath, src, 0644); err != nil {
-		return errors.Wrap(err, "writing output")
+		return fmt.Errorf("failed to write output: %w", err)
 	}
 
 	return nil
