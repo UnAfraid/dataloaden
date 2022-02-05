@@ -1,3 +1,3 @@
 package differentpkg
 
-//go:generate go run github.com/vektah/dataloaden UserLoader string *github.com/vektah/dataloaden/example.User
+//go:generate go run github.com/UnAfraid/dataloaden -name UserLoader -keyType string -valueType *github.com/UnAfraid/dataloaden/example.User

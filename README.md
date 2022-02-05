@@ -1,21 +1,21 @@
-### The DATALOADer gENerator [![CircleCI](https://circleci.com/gh/Vektah/dataloaden.svg?style=svg)](https://circleci.com/gh/vektah/dataloaden) [![Go Report Card](https://goreportcard.com/badge/github.com/vektah/dataloaden)](https://goreportcard.com/report/github.com/vektah/dataloaden) [![codecov](https://codecov.io/gh/vektah/dataloaden/branch/master/graph/badge.svg)](https://codecov.io/gh/vektah/dataloaden)
+### DataLoader Generator ![Go](https://github.com/UnAfraid/dataloaden/workflows/Go/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/UnAfraid/dataloaden)](https://goreportcard.com/report/github.com/UnAfraid/dataloaden) [![codecov](https://codecov.io/gh/UnAfraid/dataloaden/branch/master/graph/badge.svg)](https://codecov.io/gh/UnAfraid/dataloaden)
 
-Requires golang 1.11+ for modules support.
+Requires golang 1.16+ for modules support.
 
 This is a tool for generating type safe data loaders for go, inspired by https://github.com/facebook/dataloader.
 
 The intended use is in graphql servers, to reduce the number of queries being sent to the database. These dataloader
-objects should be request scoped and short lived. They should be cheap to create in every request even if they dont
+objects should be request scoped and short-lived. They should be cheap to create in every request even if they don't
 get used.
 
 #### Getting started
 
 From inside the package you want to have the dataloader in:
 ```bash
-go run github.com/vektah/dataloaden UserLoader string *github.com/dataloaden/example.User
+go run github.com/UnAfraid/dataloaden -name UserLoader -fileName generated_user_loader.go -keyType string -valueType *github.com/UnAfraid/dataloaden/example.User
 ```
 
-This will generate a dataloader called `UserLoader` that looks up `*github.com/dataloaden/example.User`'s objects 
+This will generate a dataloader called `UserLoader` that looks up `*github.com/UnAfraid/dataloaden/example.User`'s objects 
 based on a `string` key. 
 
 In another file in the same package, create the constructor method:
@@ -53,7 +53,7 @@ You may want to generate a dataloader that returns slices instead of single valu
 simple go type expression: 
 
 ```bash
-go run github.com/vektah/dataloaden UserSliceLoader string []*github.com/dataloaden/example.User
+go run github.com/UnAfraid/dataloaden -name UserSliceLoader -keyType string -valueType []*github.com/dataloaden/example.User
 ```
 
 Now each key is expected to return a slice of values and the `fetch` function has the return type `[][]*User`.
@@ -66,12 +66,12 @@ Create a tools.go that looks like this:
 
 package main
 
-import _ "github.com/vektah/dataloaden"
+import _ "github.com/UnAfraid/dataloaden"
 ```
 
 This will allow go modules to see the dependency.
 
-You can invoke it from anywhere within your module now using `go run github.com/vektah/dataloaden` and 
+You can invoke it from anywhere within your module now using `go run github.com/UnAfraid/dataloaden` and 
 always get the pinned version.
 
 #### Wait, how do I use context with this?
