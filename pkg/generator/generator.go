@@ -80,8 +80,8 @@ func parseType(str string) (*goType, error) {
 	return t, nil
 }
 
-func Generate(name, fileName, keyType, valueType, wd string) error {
-	data, err := getData(name, keyType, valueType, wd)
+func Generate(name, fileName, keyType, valueType, workingDirectory string) error {
+	data, err := getData(name, keyType, valueType, workingDirectory)
 	if err != nil {
 		return err
 	}
@@ -90,24 +90,20 @@ func Generate(name, fileName, keyType, valueType, wd string) error {
 		fileName = "generated_" + strcase.ToSnake(data.Name) + ".go"
 	}
 
-	filePath := filepath.Join(wd, fileName)
+	filePath := filepath.Join(workingDirectory, fileName)
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create parent directory: %w", err)
 	}
 
-	if err := writeTemplate(filePath, data); err != nil {
-		return err
-	}
-
-	return nil
+	return writeTemplate(filePath, data)
 }
 
-func getData(name string, keyType string, valueType string, wd string) (templateData, error) {
+func getData(name string, keyType string, valueType string, workingDirectory string) (templateData, error) {
 	var data templateData
 
-	genPkg := getPackage(wd)
+	genPkg := getPackage(workingDirectory)
 	if genPkg == nil {
-		return templateData{}, fmt.Errorf("unable to find package info for " + wd)
+		return templateData{}, fmt.Errorf("unable to find package info for " + workingDirectory)
 	}
 
 	var err error

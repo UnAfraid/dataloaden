@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/UnAfraid/dataloaden/example"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,7 +59,7 @@ func TestUserLoader(t *testing.T) {
 
 		t.Run("load many users", func(t *testing.T) {
 			t.Parallel()
-			u, err := dl.LoadAll([]int{2, 10, 20, 4})
+			u, err := dl.LoadAll([]int{2, 30, 20, 4})
 			require.Equal(t, u[0][0].Name, "user 2")
 			require.Error(t, err[1])
 			require.Error(t, err[2])
@@ -80,14 +81,14 @@ func TestUserLoader(t *testing.T) {
 		})
 	})
 
-	// t.Run("it sent two batches", func(t *testing.T) {
-	// 	mu.Lock()
-	// 	defer mu.Unlock()
-	//
-	// 	require.Len(t, fetches, 2)
-	// 	assert.Len(t, fetches[0], 5)
-	// 	assert.Len(t, fetches[1], 3)
-	// })
+	t.Run("it sent two batches", func(t *testing.T) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		require.Len(t, fetches, 2)
+		assert.Len(t, fetches[0], 5)
+		assert.Len(t, fetches[1], 3)
+	})
 
 	t.Run("fetch more", func(t *testing.T) {
 
