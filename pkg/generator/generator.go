@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -89,7 +90,12 @@ func Generate(name, fileName, keyType, valueType, wd string) error {
 		fileName = "generated_" + strcase.ToSnake(data.Name) + ".go"
 	}
 
-	if err := writeTemplate(filepath.Join(wd, fileName), data); err != nil {
+	filePath := filepath.Join(wd, fileName)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create parent directory: %w", err)
+	}
+
+	if err := writeTemplate(filePath, data); err != nil {
 		return err
 	}
 
