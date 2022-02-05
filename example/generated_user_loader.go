@@ -70,8 +70,8 @@ func (l *UserLoader) Load(key string) (*User, error) {
 // different data loaders without blocking until the thunk is called.
 func (l *UserLoader) LoadThunk(key string) func() (*User, error) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	if it, ok := l.cache[key]; ok {
-		l.mu.Unlock()
 		return func() (*User, error) {
 			return it, nil
 		}
@@ -81,7 +81,6 @@ func (l *UserLoader) LoadThunk(key string) func() (*User, error) {
 	}
 	batch := l.batch
 	pos := batch.keyIndex(l, key)
-	l.mu.Unlock()
 
 	return func() (*User, error) {
 		<-batch.done
@@ -99,11 +98,13 @@ func (l *UserLoader) LoadThunk(key string) func() (*User, error) {
 			err = batch.error[pos]
 		}
 
-		if err == nil {
-			l.mu.Lock()
-			l.unsafeSet(key, data)
-			l.mu.Unlock()
+		if err != nil {
+			return data, err
 		}
+
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.unsafeSet(key, data)
 
 		return data, err
 	}
@@ -149,6 +150,7 @@ func (l *UserLoader) LoadAllThunk(keys []string) func() ([]*User, []error) {
 // (To forcefully prime the cache, clear the key first with loader.clear(key).prime(key, value).)
 func (l *UserLoader) Prime(key string, value *User) bool {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	var found bool
 	if _, found = l.cache[key]; !found {
 		// make a copy when writing to the cache, its easy to pass a pointer in from a loop var
@@ -156,15 +158,14 @@ func (l *UserLoader) Prime(key string, value *User) bool {
 		cpy := *value
 		l.unsafeSet(key, &cpy)
 	}
-	l.mu.Unlock()
 	return !found
 }
 
 // Clear the value at key from the cache, if it exists
 func (l *UserLoader) Clear(key string) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	delete(l.cache, key)
-	l.mu.Unlock()
 }
 
 func (l *UserLoader) unsafeSet(key string, value *User) {
@@ -203,16 +204,14 @@ func (b *userLoaderBatch) keyIndex(l *UserLoader, key string) int {
 func (b *userLoaderBatch) startTimer(l *UserLoader) {
 	time.Sleep(l.wait)
 	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	// we must have hit a batch limit and are already finalizing this batch
 	if b.closing {
-		l.mu.Unlock()
 		return
 	}
 
 	l.batch = nil
-	l.mu.Unlock()
-
 	b.end(l)
 }
 

@@ -72,8 +72,8 @@ func (l *UserSliceLoader) Load(key int) ([]example.User, error) {
 // different data loaders without blocking until the thunk is called.
 func (l *UserSliceLoader) LoadThunk(key int) func() ([]example.User, error) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	if it, ok := l.cache[key]; ok {
-		l.mu.Unlock()
 		return func() ([]example.User, error) {
 			return it, nil
 		}
@@ -83,7 +83,6 @@ func (l *UserSliceLoader) LoadThunk(key int) func() ([]example.User, error) {
 	}
 	batch := l.batch
 	pos := batch.keyIndex(l, key)
-	l.mu.Unlock()
 
 	return func() ([]example.User, error) {
 		<-batch.done
@@ -101,11 +100,13 @@ func (l *UserSliceLoader) LoadThunk(key int) func() ([]example.User, error) {
 			err = batch.error[pos]
 		}
 
-		if err == nil {
-			l.mu.Lock()
-			l.unsafeSet(key, data)
-			l.mu.Unlock()
+		if err != nil {
+			return data, err
 		}
+
+		l.mu.Lock()
+		defer l.mu.Unlock()
+		l.unsafeSet(key, data)
 
 		return data, err
 	}
@@ -151,6 +152,7 @@ func (l *UserSliceLoader) LoadAllThunk(keys []int) func() ([][]example.User, []e
 // (To forcefully prime the cache, clear the key first with loader.clear(key).prime(key, value).)
 func (l *UserSliceLoader) Prime(key int, value []example.User) bool {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	var found bool
 	if _, found = l.cache[key]; !found {
 		// make a copy when writing to the cache, its easy to pass a pointer in from a loop var
@@ -159,15 +161,14 @@ func (l *UserSliceLoader) Prime(key int, value []example.User) bool {
 		copy(cpy, value)
 		l.unsafeSet(key, cpy)
 	}
-	l.mu.Unlock()
 	return !found
 }
 
 // Clear the value at key from the cache, if it exists
 func (l *UserSliceLoader) Clear(key int) {
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	delete(l.cache, key)
-	l.mu.Unlock()
 }
 
 func (l *UserSliceLoader) unsafeSet(key int, value []example.User) {
@@ -206,16 +207,14 @@ func (b *userSliceLoaderBatch) keyIndex(l *UserSliceLoader, key int) int {
 func (b *userSliceLoaderBatch) startTimer(l *UserSliceLoader) {
 	time.Sleep(l.wait)
 	l.mu.Lock()
+	defer l.mu.Unlock()
 
 	// we must have hit a batch limit and are already finalizing this batch
 	if b.closing {
-		l.mu.Unlock()
 		return
 	}
 
 	l.batch = nil
-	l.mu.Unlock()
-
 	b.end(l)
 }
 
