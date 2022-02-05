@@ -3,6 +3,10 @@
 package example
 
 import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,17 +21,25 @@ type UserLoaderConfig struct {
 	// Wait is how long wait before sending a batch
 	Wait time.Duration
 
+	// FormatErrors will format multiple errors as one
+	FormatErrors func([]error) string
+
 	// MaxBatch will limit the maximum number of keys to send in one batch, 0 = not limit
 	MaxBatch int
 }
 
 // NewUserLoader creates a new UserLoader given a fetch, wait, and maxBatch
 func NewUserLoader(config UserLoaderConfig) *UserLoader {
-	return &UserLoader{
-		fetch:    config.Fetch,
-		wait:     config.Wait,
-		maxBatch: config.MaxBatch,
+	dl := &UserLoader{
+		fetch:        config.Fetch,
+		wait:         config.Wait,
+		formatErrors: config.FormatErrors,
+		maxBatch:     config.MaxBatch,
 	}
+	if dl.formatErrors == nil {
+		dl.formatErrors = dl.defaultFormatErrors
+	}
+	return dl
 }
 
 // UserLoader batches and caches requests
@@ -40,6 +52,9 @@ type UserLoader struct {
 
 	// this will limit the maximum number of keys to send in one batch, 0 = no limit
 	maxBatch int
+
+	// this method will format errors
+	formatErrors func([]error) string
 
 	// INTERNAL
 
@@ -104,6 +119,9 @@ func (l *UserLoader) LoadThunk(key string) func() (*User, error) {
 			}
 		}
 		if errs != nil {
+			if multiErr, ok := errs.(*multierror.Error); ok {
+				multiErr.ErrorFormat = l.formatErrors
+			}
 			return data, errs
 		}
 
@@ -171,6 +189,46 @@ func (l *UserLoader) Clear(key string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	delete(l.cache, key)
+}
+
+// defaultFormatErrors would format multiple errors
+func (l *UserLoader) defaultFormatErrors(errors []error) string {
+	if len(errors) == 1 {
+		return errors[0].Error()
+	}
+
+	countsByErrors := make(map[string]int)
+	for _, err := range errors {
+		countsByErrors[err.Error()]++
+	}
+
+	type errorOccurrences struct {
+		error       string
+		occurrences int
+	}
+
+	var sortedErrorOccurrences []errorOccurrences
+	for err, count := range countsByErrors {
+		sortedErrorOccurrences = append(sortedErrorOccurrences, errorOccurrences{
+			error:       err,
+			occurrences: count,
+		})
+	}
+
+	sort.Slice(sortedErrorOccurrences, func(i, j int) bool {
+		return sortedErrorOccurrences[i].occurrences > sortedErrorOccurrences[j].occurrences
+	})
+
+	var sb strings.Builder
+	for _, seo := range sortedErrorOccurrences {
+		sb.WriteString(" * ")
+		sb.WriteString(strconv.Itoa(seo.occurrences))
+		sb.WriteString(" ")
+		sb.WriteString(seo.error)
+		sb.WriteString("\n")
+	}
+
+	return fmt.Sprintf("%d errors occurred:\n%s\n", len(errors), sb.String())
 }
 
 func (l *UserLoader) unsafeSet(key string, value *User) {
