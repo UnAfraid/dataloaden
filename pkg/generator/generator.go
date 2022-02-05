@@ -10,6 +10,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
@@ -101,12 +102,21 @@ func Generate(name, fileName, keyType, valueType, workingDirectory string) error
 func getData(name string, keyType string, valueType string, workingDirectory string) (templateData, error) {
 	var data templateData
 
+	var errs error
 	genPkg := getPackage(workingDirectory)
 	if genPkg == nil {
-		return templateData{}, fmt.Errorf("unable to find package info for %s", workingDirectory)
+		errs = fmt.Errorf("unable to find package info for %s", workingDirectory)
 	}
 	if genPkg.Name == "" {
-		return templateData{}, fmt.Errorf("unable to find package name for %s", workingDirectory)
+		err := fmt.Errorf("unable to find package name for %s", workingDirectory)
+		if errs == nil {
+			errs = err
+		} else {
+			errs = multierror.Append(errs, err)
+		}
+	}
+	if errs != nil {
+		return templateData{}, errs
 	}
 
 	var err error

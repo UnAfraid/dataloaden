@@ -17,6 +17,7 @@ import (
 
     {{if .KeyType.ImportPath}}"{{.KeyType.ImportPath}}"{{end}}
     {{if .ValType.ImportPath}}"{{.ValType.ImportPath}}"{{end}}
+	"github.com/hashicorp/go-multierror"
 )
 
 // {{.Name}}Config captures the config to create a new {{.Name}}
@@ -102,23 +103,26 @@ func (l *{{.Name}}) LoadThunk(key {{.KeyType.String}}) func() ({{.ValType.String
 			data = batch.data[pos]
 		}
 
-		var err error
-		// its convenient to be able to return a single error for everything
-		if len(batch.error) == 1 {
-			err = batch.error[0]
-		} else if batch.error != nil {
-			err = batch.error[pos]
+		var errs error
+		for _, err := range batch.error {
+			if err == nil {
+				continue
+			}
+			if errs == nil {
+				errs = err
+			} else {
+				errs = multierror.Append(errs, err)
+			}
 		}
-
-		if err != nil {
-			return data, err
+		if errs != nil {
+			return data, errs
 		}
 
 		l.mu.Lock()
 		defer l.mu.Unlock()
 		l.unsafeSet(key, data)
-		
-		return data, err
+
+		return data, nil
 	}
 }
 
