@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/imports"
@@ -85,7 +86,7 @@ func Generate(name, fileName, keyType, valueType, wd string) error {
 	}
 
 	if len(fileName) == 0 {
-		fileName = "generated_" + strings.ToLower(data.Name) + ".go"
+		fileName = "generated_" + strcase.ToSnake(data.Name) + ".go"
 	}
 
 	if err := writeTemplate(filepath.Join(wd, fileName), data); err != nil {
