@@ -11,9 +11,9 @@ func TestParseType(t *testing.T) {
 	require.Equal(t, &goType{Name: "Time", ImportPath: "time", ImportName: "time"}, parse("time.Time"))
 	require.Equal(t, &goType{
 		Name:       "Foo",
-		ImportPath: "github.com/UnAfraid/dataloaden/pkg/generator/testdata/mismatch",
+		ImportPath: "github.com/UnAfraid/dataloaden/v2/pkg/generator/testdata/mismatch",
 		ImportName: "mismatched",
-	}, parse("github.com/UnAfraid/dataloaden/pkg/generator/testdata/mismatch.Foo"))
+	}, parse("github.com/UnAfraid/dataloaden/v2/pkg/generator/testdata/mismatch.Foo"))
 }
 
 func parse(s string) *goType {

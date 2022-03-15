@@ -1,5 +1,39 @@
 ### DataLoader Generator ![Go](https://github.com/UnAfraid/dataloaden/workflows/Go/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/UnAfraid/dataloaden)](https://goreportcard.com/report/github.com/UnAfraid/dataloaden)
 
+For Go 1.18 using Generics use v2
+
+#### Getting started
+
+From inside the package you want to have the dataloader in:
+
+```bash
+go run github.com/UnAfraid/dataloaden/v2 -name UserLoader -fileName generated_user_loader.go -keyType string -valueType *github.com/UnAfraid/dataloaden/v2/example.User
+```
+
+This will generate a dataloader called `UserLoader` that looks up `*github.com/UnAfraid/dataloaden/v2/example.User`'s objects based on a `string` key.
+
+Then wherever you want to call the dataloader
+
+```go
+loader := NewUserLoader(dataloader.Config[string, *User]{
+    Fetch: func (keys []string) ([]*User, []error) {
+        users := make([]*User, len(keys))
+        errors := make([]error, len(keys))
+        
+        for i, key := range keys {
+          users[i] = &User{ID: key, Name: "user " + key}
+        }
+        return users, errors
+    },
+    Wait:     2 * time.Millisecond,
+    MaxBatch: 100,
+})
+
+user, err := loader.Load("123")
+```
+
+---
+
 Requires golang 1.16+ for modules support.
 
 This is a tool for generating type safe data loaders for go, inspired by https://github.com/facebook/dataloader.
