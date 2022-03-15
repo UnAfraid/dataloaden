@@ -10,26 +10,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/UnAfraid/dataloaden/v2/dataloader"
 	"github.com/hashicorp/go-multierror"
 )
 
-// UserLoaderConfig captures the config to create a new UserLoader
-type UserLoaderConfig struct {
-	// Fetch is a method that provides the data for the loader
-	Fetch func(keys []string) ([]*User, []error)
-
-	// Wait is how long wait before sending a batch
-	Wait time.Duration
-
-	// FormatErrors will format multiple errors as one
-	FormatErrors func([]error) string
-
-	// MaxBatch will limit the maximum number of keys to send in one batch, 0 = not limit
-	MaxBatch int
-}
-
 // NewUserLoader creates a new UserLoader given a fetch, wait, and maxBatch
-func NewUserLoader(config UserLoaderConfig) *UserLoader {
+func NewUserLoader(config dataloader.Config[*User]) dataloader.DataLoader[*User] {
 	dl := &UserLoader{
 		fetch:        config.Fetch,
 		wait:         config.Wait,

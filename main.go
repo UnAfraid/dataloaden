@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/UnAfraid/dataloaden/pkg/generator"
+	"github.com/UnAfraid/dataloaden/v2/pkg/generator"
 )
 
 func main() {
