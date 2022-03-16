@@ -1,6 +1,5 @@
 ### DataLoader Generator ![Go](https://github.com/UnAfraid/dataloaden/workflows/Go/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/UnAfraid/dataloaden)](https://goreportcard.com/report/github.com/UnAfraid/dataloaden)
-
-For Go 1.18 using Generics use v2
+### v2 (Requires go 1.18 for generics support)
 
 #### Getting started
 
@@ -33,8 +32,7 @@ user, err := loader.Load("123")
 ```
 
 ---
-
-Requires golang 1.16+ for modules support.
+# v1 (Requires golang 1.16+ for modules support)
 
 This is a tool for generating type safe data loaders for go, inspired by https://github.com/facebook/dataloader.
 
